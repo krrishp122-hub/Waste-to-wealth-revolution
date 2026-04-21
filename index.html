@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Waste to Wealth Revolution</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <!-- App Styles -->
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ SITE HEADER ══ -->
+  <header class="site-header">
+    <div class="logo-wrap">
+      <div class="logo-icon">W2W</div>
+      <div>
+        <h1>Waste to Wealth Revolution</h1>
+        <p class="small">Community-led waste management &amp; civic action</p>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="resetAll()">↺ Reset Demo</button>
+  </header>
+
+  <!-- ══ LANDING ══ -->
+  <div id="landingPage">
+    <div class="landing-hero">
+      <h1>Turn Waste Into Wealth</h1>
+      <p>Join citizens, workers, and administrators building a cleaner, greener community. Choose your role below.</p>
+    </div>
+    <div class="role-grid">
+      <div class="role-card" id="rc-citizen" onclick="pickRole('citizen')">
+        <div class="role-icon">🌿</div>
+        <h3>Citizen</h3>
+        <p>Learn waste awareness, earn credits, and raise complaints.</p>
+      </div>
+      <div class="role-card" id="rc-admin" onclick="pickRole('admin')">
+        <div class="role-icon">🛡️</div>
+        <h3>Admin</h3>
+        <p>Monitor bins, manage complaints, assign workers.</p>
+      </div>
+      <div class="role-card" id="rc-worker" onclick="pickRole('worker')">
+        <div class="role-icon">👷</div>
+        <h3>Worker</h3>
+        <p>Receive tasks, track performance, watch training.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CITIZEN AUTH ══ -->
+  <div id="citizenAuthPage" class="hidden fade-in">
+    <div class="auth-wrap">
+      <div class="card auth-card">
+        <div class="auth-icon">🌿</div>
+        <h2 style="margin-bottom:4px">Citizen Portal</h2>
+        <p class="small" style="margin-bottom:18px">Login or create a new citizen account.</p>
+        <div class="tab-row">
+          <button class="tab-btn active" id="ctab-login"  onclick="switchTab('citizen','login')">Login</button>
+          <button class="tab-btn"        id="ctab-signup" onclick="switchTab('citizen','signup')">Create Account</button>
+        </div>
+
+        <!-- Citizen Login -->
+        <div id="citizen-login-form">
+          <form onsubmit="citizenLogin(event)">
+            <div class="field"><label>Citizen ID</label><input id="cl_id" required placeholder="e.g. CIT001"/></div>
+            <div class="field"><label>Password</label><input id="cl_pwd" type="password" required placeholder="Password"/></div>
+            <div style="display:flex;gap:9px;margin-top:6px">
+              <button type="button" class="btn btn-ghost" style="flex:1" onclick="showPage('landing')">← Back</button>
+              <button type="submit" class="btn btn-primary" style="flex:1">Login</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Citizen Signup -->
+        <div id="citizen-signup-form" class="hidden">
+          <form onsubmit="citizenSignup(event)">
+            <div class="row2">
+              <div class="field"><label>Full Name</label><input id="cs_name" required placeholder="Your name"/></div>
+              <div class="field"><label>Phone / Email</label><input id="cs_contact" required placeholder="Contact"/></div>
+            </div>
+            <div class="field">
+              <label>Choose Citizen ID</label>
+              <input id="cs_id" required placeholder="e.g. CIT002 (must be unique)"/>
+              <div class="field-error" id="cs_id_err">This ID is already taken. Please choose another.</div>
+            </div>
+            <div class="field"><label>Password</label><input id="cs_pwd" type="password" required placeholder="Create password"/></div>
+            <div class="field">
+              <label>Confirm Password</label>
+              <input id="cs_pwd2" type="password" required placeholder="Repeat password"/>
+              <div class="field-error" id="cs_pwd_err">Passwords do not match.</div>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:6px">
+              <button type="button" class="btn btn-ghost" style="flex:1" onclick="showPage('landing')">← Back</button>
+              <button type="submit" class="btn btn-primary" style="flex:1">Create Account</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CITIZEN DASHBOARD ══ -->
+  <div id="citizenPage" class="hidden fade-in">
+    <div class="credit-bar">
+      <div class="credit-icon">🪙</div>
+      <div>
+        <div class="credit-count" id="creditDisplay">0</div>
+        <div class="small">Green Credits Earned</div>
+      </div>
+      <div style="margin-left:auto;font-size:12px;color:var(--muted);text-align:right">
+        +100 credits per complaint<br><span style="color:var(--g1)">with photo + description</span>
+      </div>
+    </div>
+    <div class="page-header">
+      <div><h2>Citizen Hub</h2><p class="small">Welcome, <span id="citizenNameDisplay" style="color:var(--g1)">Citizen</span></p></div>
+      <div class="page-header-actions"><button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button></div>
+    </div>
+
+    <div class="section-label">♻️ Waste Awareness Guide</div>
+    <div class="waste-types">
+      <div class="waste-card wet">
+        <div class="waste-card-header">
+          <div class="waste-emoji">🥬</div>
+          <div><span class="waste-badge badge-wet">WET WASTE</span><h3 style="margin-top:4px;font-size:13px">Biodegradable</h3></div>
+        </div>
+        <div class="waste-card-body"><ul>
+          <li>Food scraps, vegetable peels, fruit waste</li>
+          <li>Leftover food, tea &amp; coffee grounds</li>
+          <li>Flowers, leaves, garden trimmings</li>
+          <li><strong style="color:var(--g1)">Dispose:</strong> Green bin — compost/biogas</li>
+          <li>Makes excellent organic fertilizer</li>
+        </ul></div>
+      </div>
+      <div class="waste-card dry">
+        <div class="waste-card-header">
+          <div class="waste-emoji">📦</div>
+          <div><span class="waste-badge badge-dry">DRY WASTE</span><h3 style="margin-top:4px;font-size:13px">Recyclable</h3></div>
+        </div>
+        <div class="waste-card-body"><ul>
+          <li>Paper, cardboard, newspapers</li>
+          <li>Plastic bottles, bags (clean)</li>
+          <li>Glass bottles, metal cans</li>
+          <li><strong style="color:#90d0ff">Dispose:</strong> Blue bin — recycling</li>
+          <li>Clean before placing — no food residue</li>
+        </ul></div>
+      </div>
+      <div class="waste-card ewaste">
+        <div class="waste-card-header">
+          <div class="waste-emoji">💻</div>
+          <div><span class="waste-badge badge-ewaste">E-WASTE</span><h3 style="margin-top:4px;font-size:13px">Electronic</h3></div>
+        </div>
+        <div class="waste-card-body"><ul>
+          <li>Old phones, laptops, chargers</li>
+          <li>Batteries — never in regular bins!</li>
+          <li>CFL bulbs, circuit boards</li>
+          <li><strong style="color:#c4b5ff">Dispose:</strong> E-waste drop centres</li>
+          <li>Contains toxic metals — handle carefully</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="cleanup-box">
+      <div style="font-size:38px;flex-shrink:0">🧹</div>
+      <div style="flex:1">
+        <h3>Monthly Cleanup Drive</h3>
+        <p>Join us every <strong style="color:var(--text)">4th Saturday of the month</strong> for our community cleanup drive. Meeting point: Town Hall Garden, 7:00 AM. Free refreshments provided!</p>
+      </div>
+      <div class="cleanup-date-chip">
+        <div class="tiny">Next Drive</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--g1)" id="nextDriveDate">—</div>
+        <div class="tiny">4th Saturday</div>
+      </div>
+    </div>
+
+    <!-- ══ REDEEM REWARDS ══ -->
+    <div class="section-label">🎁 Redeem Rewards</div>
+    <div class="card" style="padding:18px;margin-bottom:22px">
+      <div class="small" style="margin-bottom:12px">Use your Green Credits to redeem exciting products!</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+
+        <div class="card" style="padding:12px;text-align:center">
+          <img src="https://m.media-amazon.com/images/I/81nacVY+yVL._SL1500_.jpg" style="width:100%;height:150px;object-fit:cover;border-radius:10px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600">Boat Headphones</div>
+          <div class="tiny">500 Credits</div>
+          <button onclick="redeemItem(500)" class="btn btn-primary btn-sm" style="margin-top:6px">Redeem</button>
+        </div>
+
+        <div class="card" style="padding:12px;text-align:center">
+          <img src="https://m.media-amazon.com/images/I/71o6CU8MqVL._AC_UF1000,1000_QL80_.jpg" style="width:100%;height:150px;object-fit:cover;border-radius:10px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600">Bluetooth Speaker</div>
+          <div class="tiny">800 Credits</div>
+          <button onclick="redeemItem(800)" class="btn btn-primary btn-sm" style="margin-top:6px">Redeem</button>
+        </div>
+
+        <div class="card" style="padding:12px;text-align:center">
+          <img src="https://m.media-amazon.com/images/I/71SB8ivq4GL._SL1500_.jpg" style="width:100%;height:150px;object-fit:cover;border-radius:10px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600">Wireless Earbuds</div>
+          <div class="tiny">1200 Credits</div>
+          <button onclick="redeemItem(1200)" class="btn btn-primary btn-sm" style="margin-top:6px">Redeem</button>
+        </div>
+
+        <div class="card" style="padding:12px;text-align:center">
+          <img src="https://m.media-amazon.com/images/I/81jOiU+tzWL._SL1500_.jpg" style="width:100%;height:150px;object-fit:cover;border-radius:10px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600">Power Bank</div>
+          <div class="tiny">300 Credits</div>
+          <button onclick="redeemItem(300)" class="btn btn-primary btn-sm" style="margin-top:6px">Redeem</button>
+        </div>
+
+        <div class="card" style="padding:12px;text-align:center">
+          <img src="https://m.media-amazon.com/images/I/71tkAAxauUL._SL1500_.jpg" style="width:100%;height:150px;object-fit:cover;border-radius:10px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600">Smart Watch</div>
+          <div class="tiny">1800 Credits</div>
+          <button onclick="redeemItem(1800)" class="btn btn-primary btn-sm" style="margin-top:6px">Redeem</button>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="section-label">📣 Raise a Complaint</div>
+    <div class="complaint-section">
+      <div class="credit-hint">💡 Submit both a <strong>description</strong> and a <strong>photo</strong> to earn <strong>+100 Green Credits</strong>! You may raise <strong>1 complaint per week</strong>.</div>
+      <div id="cooldownBanner" class="cooldown-banner hidden"></div>
+      <form id="complaintForm">
+        <div class="row2">
+          <div class="field"><label>Your Name</label><input id="comp_name" required placeholder="Full name"/></div>
+          <div class="field"><label>Phone / Email</label><input id="comp_phone" required placeholder="Contact info"/></div>
+        </div>
+        <div class="field"><label>Location</label><input id="comp_loc" required placeholder="Address or landmark"/></div>
+        <div class="field"><label>Complaint Description</label><textarea id="comp_details" required placeholder="Describe the waste / dumping issue in detail…"></textarea></div>
+        <div class="field"><label>Upload Photo 📷</label><input id="comp_file" type="file" accept="image/*,video/*"/></div>
+        <div style="display:flex;gap:9px;justify-content:flex-end;margin-top:4px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('complaintForm').reset()">Clear</button>
+          <button type="submit" class="btn btn-primary" id="submitComplaintBtn">Submit Complaint</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN AUTH ══ -->
+  <div id="adminAuthPage" class="hidden fade-in">
+    <div class="auth-wrap">
+      <div class="card auth-card">
+        <div class="auth-icon">🛡️</div>
+        <h2 style="margin-bottom:4px">Admin Portal</h2>
+        <p class="small" style="margin-bottom:18px">Login or create a new admin account.</p>
+        <div class="tab-row">
+          <button class="tab-btn active" id="atab-login"  onclick="switchTab('admin','login')">Login</button>
+          <button class="tab-btn"        id="atab-signup" onclick="switchTab('admin','signup')">Create Account</button>
+        </div>
+
+        <!-- Admin Login -->
+        <div id="admin-login-form">
+          <form onsubmit="adminLogin(event)">
+            <div class="field"><label>Admin ID</label><input id="al_id" required placeholder="e.g. ADM001"/></div>
+            <div class="field"><label>Password</label><input id="al_pwd" type="password" required placeholder="Password"/></div>
+            <div style="display:flex;gap:9px;margin-top:6px">
+              <button type="button" class="btn btn-ghost" style="flex:1" onclick="showPage('landing')">← Back</button>
+              <button type="submit" class="btn btn-primary" style="flex:1">Login</button>
+            </div>
+          </form>
+          <div style="margin-top:14px;padding:9px 13px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border)">
+            <div class="tiny" style="margin-bottom:3px">Default demo admin:</div>
+            <div class="tiny">ID: <strong style="color:var(--g1)">ADM001</strong> &nbsp;|&nbsp; Password: <strong style="color:var(--g1)">admin123</strong></div>
+          </div>
+        </div>
+
+        <!-- Admin Signup -->
+        <div id="admin-signup-form" class="hidden">
+          <form onsubmit="adminSignup(event)">
+            <div class="field"><label>Full Name</label><input id="as_name" required placeholder="Your name"/></div>
+            <div class="field">
+              <label>Choose Admin ID</label>
+              <input id="as_id" required placeholder="e.g. ADM002 (must be unique)"/>
+              <div class="field-error" id="as_id_err">This Admin ID is already taken.</div>
+            </div>
+            <div class="field"><label>Password</label><input id="as_pwd" type="password" required placeholder="Create password"/></div>
+            <div class="field">
+              <label>Confirm Password</label>
+              <input id="as_pwd2" type="password" required placeholder="Repeat password"/>
+              <div class="field-error" id="as_pwd_err">Passwords do not match.</div>
+            </div>
+            <div class="field">
+              <label>Master Key <span class="tiny">(required to create admin)</span></label>
+              <input id="as_key" required placeholder="Enter master key"/>
+              <div class="field-error" id="as_key_err">Invalid master key.</div>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:6px">
+              <button type="button" class="btn btn-ghost" style="flex:1" onclick="showPage('landing')">← Back</button>
+              <button type="submit" class="btn btn-primary" style="flex:1">Create Admin</button>
+            </div>
+            <div style="margin-top:12px;padding:9px 13px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border)">
+              <div class="tiny">Master key: <strong style="color:var(--g1)">W2W-MASTER-2025</strong></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN DASHBOARD ══ -->
+  <div id="adminPage" class="hidden fade-in">
+    <div class="page-header">
+      <div><h2>Admin Dashboard</h2><p class="small">Welcome, <span id="adminNameDisplay" style="color:var(--g1)">Admin</span></p></div>
+      <div class="page-header-actions">
+        <span id="adminAlertChip" class="alert-chip hidden">⚠ Bins Critical</span>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="statBins">—</div><div class="lbl">Total Bins</div></div>
+      <div class="stat-box"><div class="num" id="statComplaints">—</div><div class="lbl">Open Complaints</div></div>
+      <div class="stat-box"><div class="num" id="statWorkers">—</div><div class="lbl">Active Workers</div></div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="section-label">🗺️ Live Bin Map</div>
+        <div id="map"></div>
+        <div class="section-label">🗑️ Bin Status</div>
+        <div class="scroll-box" id="binList"></div>
+      </div>
+      <div>
+        <div class="section-label">📋 Citizen Complaints</div>
+        <div class="scroll-box" id="complaintsContainer"></div>
+        <div class="section-label" style="margin-top:14px">👷 Worker Performance</div>
+        <div id="workerPerf"></div>
+        <div class="section-label" style="margin-top:14px">➕ Assign Task</div>
+        <div class="card" style="padding:14px">
+          <div class="field"><label>Task Title</label><input id="task_title" placeholder="e.g. Empty BIN003"/></div>
+          <div class="field"><label>Details</label><textarea id="task_details" rows="2" placeholder="Task description…"></textarea></div>
+          <div class="field"><label>Assign To</label><select id="task_worker"><option value="">— Select Worker —</option></select></div>
+          <button class="btn btn-primary btn-sm" onclick="addTask()">Assign Task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ WORKER AUTH ══ -->
+  <div id="workerAuthPage" class="hidden fade-in">
+    <div class="auth-wrap">
+      <div class="card auth-card">
+        <div class="auth-icon">👷</div>
+        <h2 style="margin-bottom:4px">Worker Portal</h2>
+        <p class="small" style="margin-bottom:18px">Login or register as a new worker.</p>
+        <div class="tab-row">
+          <button class="tab-btn active" id="wtab-login"  onclick="switchTab('worker','login')">Login</button>
+          <button class="tab-btn"        id="wtab-signup" onclick="switchTab('worker','signup')">Create Account</button>
+        </div>
+
+        <!-- Worker Login -->
+        <div id="worker-login-form">
+          <form onsubmit="workerLogin(event)">
+            <div class="field"><label>Worker ID</label><input id="wl_id" required placeholder="e.g. WKR001"/></div>
+            <div class="field"><label>Password</label><input id="wl_pwd" type="password" required placeholder="Password"/></div>
+            <div style="display:flex;gap:9px;margin-top:6px">
+              <button type="button" class="btn btn-ghost" style="flex:1" onclick="showPage('landing')">← Back</button>
+              <button type="submit" class="btn btn-primary" style="flex:1">Login</button>
+            </div>
+          </form>
+          <div style="margin-top:14px;padding:9px 13px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border)">
+            <div class="tiny" style="margin-bottom:3px">Demo workers:</div>
+            <div class="tiny">WKR001 / <strong style="color:var(--g1)">worker123</strong> &nbsp;|&nbsp; WKR002 / <strong style="color:var(--g1)">worker456</strong></div>
+          </div>
+        </div>
+
+        <!-- Worker Signup -->
+        <div id="worker-signup-form" class="hidden">
+          <form onsubmit="workerSignup(event)">
+            <div class="field"><label>Full Name</label><input id="ws_name" required placeholder="Your full name"/></div>
+            <div class="field">
+              <label>Choose Worker ID</label>
+              <input id="ws_id" required placeholder="e.g. WKR004 (must be unique)"/>
+              <div class="field-error" id="ws_id_err">This Worker ID is already taken.</div>
+            </div>
+            <div class="field"><label>Password</label><input id="ws_pwd" type="password" required placeholder="Create password"/></div>
+            <div class="field">
+              <label>Confirm Password</label>
+              <input id="ws_pwd2" type="password" required placeholder="Repeat password"/>
+              <div class="field-error" id="ws_pwd_err">Passwords do not match.</div>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:6px">
+              <button type="button" class="btn btn-ghost" style="flex:1" onclick="showPage('landing')">← Back</button>
+              <button type="submit" class="btn btn-primary" style="flex:1">Register</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ WORKER DASHBOARD ══ -->
+  <div id="workerPage" class="hidden fade-in">
+    <div class="page-header">
+      <div><h2>Worker Portal</h2><p class="small">Logged in as <span id="workerNameDisplay" style="color:var(--g1)">Worker</span></p></div>
+      <div class="page-header-actions"><button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button></div>
+    </div>
+    <div class="section-label">🎓 Training Videos</div>
+    <div class="training-grid">
+      <div class="video-wrap"><iframe src="https://www.youtube.com/embed/zg5K0wJp0fU" title="Training 1" allowfullscreen></iframe></div>
+      <div class="video-wrap"><iframe src="https://www.youtube.com/embed/9Q2a8H9GQyQ" title="Training 2" allowfullscreen></iframe></div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="section-label">📋 Assigned Tasks</div>
+        <div id="workerTasks"></div>
+        <div class="section-label" style="margin-top:14px">📌 Waste Control Tips</div>
+        <div class="card" style="padding:14px">
+          <ul style="list-style:none;padding:0">
+            <li style="padding:5px 0;font-size:13px;color:var(--muted);border-bottom:1px solid var(--border)">♻️ Segregate waste at source: wet, dry, hazardous</li>
+            <li style="padding:5px 0;font-size:13px;color:var(--muted);border-bottom:1px solid var(--border)">🚨 Report overflowing bins immediately</li>
+            <li style="padding:5px 0;font-size:13px;color:var(--muted);border-bottom:1px solid var(--border)">🦺 Follow safety protocols — PPE required for hazardous waste</li>
+            <li style="padding:5px 0;font-size:13px;color:var(--muted)">🌱 Encourage composting and reduce single-use plastics</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">📊 Your Performance</div>
+        <div id="workerStats"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<div id="toast"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- App Script -->
+<script src="app.js"></script>
+</body>
+</html>
